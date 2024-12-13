@@ -10,7 +10,7 @@ public class Reader {
         return Integer.parseInt(inputs.get(0));
     }
 
-    public static String getDay(String dayInput) {
+    public static String getDayOfWeek(String dayInput) {
         List<String> inputs = getStringsUsingDelimiter(dayInput, ",");
         return inputs.get(1);
     }
