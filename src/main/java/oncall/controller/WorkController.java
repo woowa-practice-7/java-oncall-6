@@ -13,7 +13,7 @@ import oncall.util.Reader;
 import oncall.view.InputView;
 import oncall.view.OutputView;
 
-public class WorkController {
+public class WorkController extends ExceptionLoopController {
     private final WorkerService workerService;
     private final WorkingDayService workingDayService;
     private final WorkerAssignmentService workerAssignmentService;
@@ -26,13 +26,14 @@ public class WorkController {
 
     public void run() {
         // 사용자에게 월, 시작요일 입력받기
-        DayInfo dayInfo = getValidDayInfo();
+        DayInfo dayInfo = repeatUntilValid(this::getValidDayInfo);
 
         // 평일 근무명단 입력받기
-        WorkerDayData workerDayData = getValidWorkersOnDay();
+        WorkerDayData workerDayData = repeatUntilValid(this::getValidWorkersOnDay);
 
         // 휴일 근무명단 입력받기
-        WorkerOnHoliDays workerOnHoliDays = getValidWorkersOnHoliday(workerDayData.orderOnDay, workerDayData.workers);
+        WorkerOnHoliDays workerOnHoliDays = repeatUntilValid(
+                () -> getValidWorkersOnHoliday(workerDayData.orderOnDay, workerDayData.workers));
 
         // 월, 시작요일에 맞게 WorkingDay들 생성
         WorkingDays workingDays = workingDayService.createWorkingDays(dayInfo.month, dayInfo.dayOfWeek);
@@ -45,43 +46,26 @@ public class WorkController {
     }
 
     private DayInfo getValidDayInfo() {
-        while (true) {
-            try {
-                String input = InputView.getDay();
-                Integer month = Reader.getMonth(input);
-                String dayOfWeek = Reader.getDayOfWeek(input);
-                return new DayInfo(month, dayOfWeek);
-            } catch (Exception e) {
-                OutputView.printError(e.getMessage());
-            }
-        }
+        String input = InputView.getDay();
+        Integer month = Reader.getMonth(input);
+        String dayOfWeek = Reader.getDayOfWeek(input);
+        return new DayInfo(month, dayOfWeek);
+
     }
 
     private WorkerDayData getValidWorkersOnDay() {
-        while (true) {
-            try {
-                String input = InputView.getWorkOrderOnDay();
-                List<String> orderOnDay = Reader.getOrder(input);
-                Workers workers = workerService.createWorkers(orderOnDay);
-                WorkerOnDays workerOnDays = workerService.createWorkerOnDays(workers, orderOnDay);
-                return new WorkerDayData(orderOnDay, workers, workerOnDays);
-            } catch (Exception e) {
-                OutputView.printError(e.getMessage());
-            }
-        }
+        String input = InputView.getWorkOrderOnDay();
+        List<String> orderOnDay = Reader.getOrder(input);
+        Workers workers = workerService.createWorkers(orderOnDay);
+        WorkerOnDays workerOnDays = workerService.createWorkerOnDays(workers, orderOnDay);
+        return new WorkerDayData(orderOnDay, workers, workerOnDays);
     }
 
     private WorkerOnHoliDays getValidWorkersOnHoliday(List<String> orderOnDay, Workers workers) {
-        while (true) {
-            try {
-                String input = InputView.getWorkOrderOnHoliday();
-                List<String> orderOnHoliday = Reader.getOrder(input);
-                workerService.compareOrders(orderOnDay, orderOnHoliday);
-                return workerService.createWorkerOnHoliays(workers, orderOnHoliday);
-            } catch (Exception e) {
-                OutputView.printError(e.getMessage());
-            }
-        }
+        String input = InputView.getWorkOrderOnHoliday();
+        List<String> orderOnHoliday = Reader.getOrder(input);
+        workerService.compareOrders(orderOnDay, orderOnHoliday);
+        return workerService.createWorkerOnHoliays(workers, orderOnHoliday);
     }
 
     // Helper classes to encapsulate data

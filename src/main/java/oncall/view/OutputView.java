@@ -7,7 +7,7 @@ public class OutputView {
         workingDays.printOrder();
     }
 
-    public static void printError(String Message) {
-        System.out.println(Message);
+    public static void printError(String message) {
+        System.out.println(message);
     }
 }
